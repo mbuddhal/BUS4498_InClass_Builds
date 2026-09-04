@@ -14,7 +14,7 @@ Manu Buddhala
 VibeCast
 
 ### System Goal
-The goal is to accurately predict attendance at Cal Poly Vibecoding Club hackathon events so coordinators can allocate the right amount of food, drinks, swag, and other resources while reducing waste and controlling costs.
+For CPVC event organizers, accurately forecast AI Hackathon attendance, measured by improving from the current registration based approach, where roughly 40% of registrants attended the last event, to forecasts within 10% of actual attendance, without exceeding the club’s budget, running short on essential resources, compromising privacy, or sending excessive communications.
 
 ### Who Is Better Off When This Works?
 
