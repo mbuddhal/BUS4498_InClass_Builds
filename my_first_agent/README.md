@@ -12,11 +12,11 @@ Manu Buddhala
 
 ### System Name
 
-[Use a default name "HackTrack" or enter the name you choose for the system.]
+VibeCast
 
 ### System Goal
-[Read Chapter 2 Section 2.1, then enter the well-structured goal of your agentic system]
+The goal is to accurately predict attendance at Cal Poly Vibecoding Club hackathon events so coordinators can allocate the right amount of food, drinks, swag, and other resources while reducing waste and controlling costs.
 
 ### Who Is Better Off When This Works?
 
-[In one complete sentence, identify who will be better off when the system works.]
+CPVC club coordinators, attendees, and the club budget are better off: coordinators plan with greater confidence, attendees are less likely to face shortages, and the club wastes less money on unused resources.
