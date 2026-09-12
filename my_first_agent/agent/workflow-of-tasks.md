@@ -16,9 +16,11 @@ A run is complete when the system has processed the latest registration, cancell
 
 ### 1.4 General Workflow
 
-When CPVC creates an AI Hackathon event, the system collects registration details, event information, cancellations, reminder responses, and relevant attendance history. It cleans and validates the data, estimates expected attendance, calculates a likely range, adds a safety buffer, and recommends quantities for food, drinks, and swag. Coordinators review the forecast and recommendations before purchasing supplies.
+CPVC creates an event through T1: Define Event Planning Brief, opens registration with T2, and collects registrations, cancellations, and reminder responses through T3. T4: Normalize and Reconcile Attendance Records checks for duplicates, missing information, and conflicting records. If issues exist, T5: Resolve Data Issues or Flag Missing Evidence sends them for correction or coordinator review. T6: Establish Baseline and Uncertainty Assumptions applies the historical 40 percent baseline when needed.
 
-If registration or attendance data is incomplete, duplicated, or insufficient for a reliable prediction, the system alerts the coordinators and uses the historical 40 percent attendance rate as a baseline. Coordinators can adjust the final recommendations based on event specific knowledge, such as unusual promotion or scheduling conflicts. After the event, actual check in data is recorded and compared with the forecast so future predictions can improve.
+T7: Investigate Attendance Signals uses a bounded AI agent to choose the next approved attendance-data check based on what it finds. The agent can review registration, cancellation, reminder, or historical evidence, but it must stay within its check/time limit and hand unresolved cases to a coordinator. T8: Produce Attendance Estimate and Likely Range creates the forecast, followed by T9: Add Safety Buffer and T10: Calculate Food, Drink, and Swag Quantities.
+
+A coordinator reviews the plan through H1. If changes are needed, T11: Record Coordinator Override and Revise Plan updates it. While registration remains open, T12: Monitor New Registrations and Reminder Responses sends new information back to T4. After the event, T13: Capture Event Check-In Data, T14: Compare Forecast with Actual Attendance, and T15: Store Results and Update Future Baseline complete the workflow.
 
 ### 1.5 Workflow Diagram
 
@@ -38,11 +40,22 @@ flowchart TD
     D2 -->|Yes| T3
     D2 -->|No| T6["T6: Establish baseline and uncertainty assumptions"]
 
-    D1 -->|Yes| T7["T7: Investigate attendance signals"]
-    T7 --> D3{"D3: Is the evidence sufficient for a supported forecast?"}
-    D3 -->|No| T6
+    D1 -->|Yes| T6
+    T6 --> T7A
+
+    subgraph T7["T7: Investigate attendance signals"]
+        T7A["Choose next approved evidence check"]
+        T7A --> T7B["Inspect registration, cancellation, reminder, or historical evidence"]
+        T7B --> T7C["Update evidence summary and remaining uncertainty"]
+        T7C --> D3{"Is the evidence sufficient for a supported forecast?"}
+        D3 -->|No, another useful check remains| T7A
+    end
+
     D3 -->|Yes| T8["T8: Produce attendance estimate and likely range"]
-    T6 --> T8
+    D3 -->|No useful check or budget exhausted| H0["H0: Coordinator reviews unresolved evidence"]
+
+    H0 -->|Resolved or baseline approved| T8
+    H0 -->|Still unresolved| C2([C2: Forecast deferred for human decision])
 
     T8 --> T9["T9: Add safety buffer"]
     T9 --> T10["T10: Calculate food, drink, and swag quantities"]
@@ -54,7 +67,7 @@ flowchart TD
     T11 --> H1
 
     D4 -->|Yes| D5{"D5: Is the event canceled?"}
-    D5 -->|Yes| C2([C2: Workflow stopped])
+    D5 -->|Yes| C3([C3: Workflow stopped])
     D5 -->|No| D6{"D6: Is registration still open?"}
 
     D6 -->|Yes| T12["T12: Monitor new registrations and reminder responses"]
