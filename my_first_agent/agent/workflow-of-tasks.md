@@ -24,38 +24,44 @@ If registration or attendance data is incomplete, duplicated, or insufficient fo
 
 ```mermaid
 flowchart TD
-    T1["T1: Create event"] --> T2["T2: Open registration"]
-    T2 --> T3["T3: Collect registration data"]
-    T3 --> T4["T4: Validate input data"]
+    S([Start: CPVC creates AI Hackathon event])
 
-    T4 --> D1{"D1: Is data complete?"}
-    D1 -->|No| H1["H1: Review data issues"]
-    H1 --> D2{"D2: Can data be corrected?"}
+    S --> T1["T1: Define event planning brief"]
+    T1 --> T2["T2: Open registration and set event window"]
+    T2 --> T3["T3: Collect registrations, cancellations, and reminder responses"]
+
+    T3 --> T4["T4: Normalize and reconcile attendance records"]
+    T4 --> D1{"D1: Are records complete and consistent?"}
+
+    D1 -->|No| T5["T5: Resolve data issues or flag missing evidence"]
+    T5 --> D2{"D2: Can the issue be corrected before forecasting?"}
     D2 -->|Yes| T3
-    D2 -->|No| T6["T6: Apply baseline attendance rate"]
+    D2 -->|No| T6["T6: Establish baseline and uncertainty assumptions"]
 
-    D1 -->|Yes| D3{"D3: Is historical data sufficient?"}
-    D3 -->|Yes| T5["T5: Calculate attendance forecast"]
+    D1 -->|Yes| T7["T7: Investigate attendance signals"]
+    T7 --> D3{"D3: Is the evidence sufficient for a supported forecast?"}
     D3 -->|No| T6
+    D3 -->|Yes| T8["T8: Produce attendance estimate and likely range"]
+    T6 --> T8
 
-    T5 --> T7["T7: Add safety buffer"]
-    T6 --> T7
-    T7 --> T8["T8: Recommend resource quantities"]
-    T8 --> H2["H2: Review recommendations"]
+    T8 --> T9["T9: Add safety buffer"]
+    T9 --> T10["T10: Calculate food, drink, and swag quantities"]
 
-    H2 --> D4{"D4: Do coordinators approve?"}
-    D4 -->|No| T9["T9: Adjust resource plan"]
-    T9 --> H2
+    T10 --> H1["H1: Coordinator reviews forecast and resource plan"]
+    H1 --> D4{"D4: Approve resource plan?"}
+
+    D4 -->|No| T11["T11: Record coordinator override and revise plan"]
+    T11 --> H1
+
     D4 -->|Yes| D5{"D5: Is the event canceled?"}
-
     D5 -->|Yes| C2([C2: Workflow stopped])
     D5 -->|No| D6{"D6: Is registration still open?"}
 
-    D6 -->|Yes| T10["T10: Monitor registration changes"]
-    T10 --> T3
-    D6 -->|No| T11["T11: Record check in data"]
+    D6 -->|Yes| T12["T12: Monitor new registrations and reminder responses"]
+    T12 --> T4
 
-    T11 --> T12["T12: Compare forecast with attendance"]
-    T12 --> T13["T13: Store event results"]
-    T13 --> C1([C1: Forecast completed and results stored])
+    D6 -->|No| T13["T13: Capture event check-in data"]
+    T13 --> T14["T14: Compare forecast with actual attendance"]
+    T14 --> T15["T15: Store results and update future baseline"]
+    T15 --> C1([C1: Forecast and learning record stored])
 ```
