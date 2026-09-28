@@ -5,6 +5,12 @@
 task_id: "T8"
 task_name: "Investigate unresolved attendance signals"
 task_owner: "CPVC event planning coordinator"
+# Agent Inference Configuration
+Provider: Groq
+Model: "llama-3.3-70b-versatile"
+Role: "Select and perform the permitted T8 evidence-inspection subtasks for registration, cancellation and reminder, and historical attendance evidence."
+Maximum inference requests per task run: 3
+On inference failure or exhausted limits: "Record the unresolved status and hand the case to H0: Coordinator reviews unresolved evidence."
 ```
 
 ## 1. Task Goal
@@ -32,6 +38,50 @@ task_owner: "CPVC event planning coordinator"
 - **Source:** Workflow configuration.
 
 ## 3. Tool Permissions and Boundaries
+
+### Task-Wide Limits
+
+- **Total task timeout:** 5 minutes per task run, including inference requests, tool calls, retries, and waiting.
+- **Maximum tool calls:** 3 total calls across all tools during one task run; retries count toward this total.
+
+### Tool 1
+
+- **Tool name:** `inspect_registration_evidence`
+- **Input:** Reconciled attendance evidence
+- **Output:** Evidence summary; Unresolved issues
+- **Implementation Route:** File operations and functions/scripts; no production integration is required.
+- **Integration approach:** Direct integration.
+- **Role in this task:** Supports Permitted Subtask 1: Inspect registration evidence.
+- **Task timeout:** Within the five-minute total task-run limit.
+- **Maximum retries:** 0
+- **Retry only when:** Not applicable — retries are not permitted for the same evidence version.
+- **On timeout, exhausted retries, or an error that cannot be retried:** Record Status: Escalated to human; record the unresolved registration status and hand the case to H0: Coordinator reviews unresolved evidence. Do not continue as if the check succeeded.
+
+### Tool 2
+
+- **Tool name:** `inspect_cancellation_reminder_evidence`
+- **Input:** Reconciled attendance evidence
+- **Output:** Evidence summary; Unresolved issues
+- **Implementation Route:** File operations and functions/scripts; no production integration is required.
+- **Integration approach:** Direct integration.
+- **Role in this task:** Supports Permitted Subtask 2: Inspect cancellation and reminder evidence.
+- **Task timeout:** Within the five-minute total task-run limit.
+- **Maximum retries:** 0
+- **Retry only when:** Not applicable — retries are not permitted for the same evidence version.
+- **On timeout, exhausted retries, or an error that cannot be retried:** Record Status: Escalated to human; record the unresolved cancellation or reminder status and hand the case to H0: Coordinator reviews unresolved evidence. Do not continue as if the check succeeded.
+
+### Tool 3
+
+- **Tool name:** `inspect_historical_attendance_evidence`
+- **Input:** Historical attendance evidence
+- **Output:** Evidence summary; Unresolved issues
+- **Implementation Route:** File operations and functions/scripts; no production integration is required.
+- **Integration approach:** Direct integration.
+- **Role in this task:** Supports Permitted Subtask 3: Inspect historical attendance evidence.
+- **Task timeout:** Within the five-minute total task-run limit.
+- **Maximum retries:** 0
+- **Retry only when:** Not applicable — retries are not permitted for the same evidence version.
+- **On timeout, exhausted retries, or an error that cannot be retried:** Record Status: Escalated to human; record the unresolved historical-evidence status and hand the case to H0: Coordinator reviews unresolved evidence. Do not continue as if the check succeeded.
 
 - Use only the supplied evidence and the approved checks described below.
 - Do not contact registrants, change attendance records, approve or replace a baseline, or produce the final forecast.
