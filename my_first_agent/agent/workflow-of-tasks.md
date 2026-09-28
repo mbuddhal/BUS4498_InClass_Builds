@@ -157,9 +157,9 @@ flowchart TD
 
 ### T8: Investigate Unresolved Attendance Signals
 
-**Purpose:** Improve the evidence without allowing unbounded autonomous investigation.
+**Purpose:** Resolve material attendance uncertainties or produce an evidence summary sufficient for T9 while keeping investigation bounded.
 
-**Inputs:** Data-quality findings, unresolved statuses, approved evidence sources, and an investigation check/time budget.
+**Inputs:** Reconciled attendance evidence (current registrations, cancellations, reminder responses, unanswered records, timestamps, and data-quality findings), historical attendance evidence (prior event results and approved baseline), and investigation limits (approved evidence sources, maximum of three checks, and a five-minute time limit).
 
 **Actions:** Choose the next approved check, inspect registration, cancellation, reminder, or historical evidence, update the evidence summary, and stop when the budget is exhausted or evidence is sufficient. Escalate unresolved cases to H0.
 
