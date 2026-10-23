@@ -176,6 +176,132 @@ function unique(items: string[]): string[] {
   return [...new Set(items)];
 }
 
+const monthNumbers: Record<string, string> = {
+  january: "01", jan: "01", february: "02", feb: "02", march: "03", mar: "03",
+  april: "04", apr: "04", may: "05", june: "06", jun: "06", july: "07", jul: "07",
+  august: "08", aug: "08", september: "09", sep: "09", october: "10", oct: "10",
+  november: "11", nov: "11", december: "12", dec: "12",
+};
+
+const weekdayNumbers: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+function padNumber(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function dateFromParts(month: string, day: string, yearText: string | undefined, today: string): string {
+  const year = yearText
+    ? (yearText.length === 2 ? Number(`20${yearText}`) : Number(yearText))
+    : Number(today.slice(0, 4));
+  const candidate = `${year}-${monthNumbers[month.toLowerCase()]}-${padNumber(Number(day))}`;
+  return isValidDate(candidate) ? candidate : "";
+}
+
+function recoverObviousDate(announcement: string, today: string): string {
+  const namedDate = /\b(?:(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s*,?\s*)?(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:,\s*(\d{2,4}))?\b/i.exec(announcement);
+  if (namedDate) {
+    return dateFromParts(namedDate[1], namedDate[2], namedDate[3], today);
+  }
+
+  const numericDate = /\b(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\b/.exec(announcement);
+  if (numericDate) {
+    const year = numericDate[3]
+      ? (numericDate[3].length === 2 ? `20${numericDate[3]}` : numericDate[3])
+      : today.slice(0, 4);
+    const candidate = `${year}-${padNumber(Number(numericDate[1]))}-${padNumber(Number(numericDate[2]))}`;
+    if (isValidDate(candidate)) return candidate;
+  }
+
+  if (/\b(?:tomorrow|tmrw)\b/i.test(announcement)) return addDays(today, 1);
+  if (/\btoday\b/i.test(announcement)) return today;
+
+  const weekday = /\b(this|next)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i.exec(announcement);
+  if (weekday) {
+    const todayDate = new Date(`${today}T00:00:00Z`);
+    let offset = (weekdayNumbers[weekday[2].toLowerCase()] - todayDate.getUTCDay() + 7) % 7;
+    if (weekday[1].toLowerCase() === "next") offset = offset || 7;
+    if (weekday[1].toLowerCase() === "next" && offset < 7) offset += 7;
+    return addDays(today, offset);
+  }
+  return "";
+}
+
+function clockToTime(hourText: string, minuteText: string | undefined, suffix: string): string {
+  let hour = Number(hourText);
+  if (hour < 1 || hour > 12) return "";
+  if (suffix.toLowerCase() === "am") hour = hour === 12 ? 0 : hour;
+  else hour = hour === 12 ? 12 : hour + 12;
+  return `${padNumber(hour)}:${minuteText || "00"}`;
+}
+
+function recoverObviousTimes(announcement: string): { start: string; end: string } {
+  const range = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:to|through|-|–|—)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i.exec(announcement);
+  if (range) {
+    const suffix = range[3] || range[6];
+    return {
+      start: clockToTime(range[1], range[2], suffix),
+      end: clockToTime(range[4], range[5], range[6]),
+    };
+  }
+
+  const single = /\b(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i.exec(announcement);
+  if (single) return { start: clockToTime(single[1], single[2], single[3]), end: "" };
+  return { start: "", end: "" };
+}
+
+function recoverObviousPlace(card: Card, announcement: string): Card {
+  const recovered = { ...card };
+  const lower = announcement.toLowerCase();
+  if (!recovered.place_code) {
+    if (/\buu\s+plaza\b/.test(lower)) recovered.place_code = "UU-PLAZA";
+    else if (/\buniversity union\b|\buu\b/.test(lower)) recovered.place_code = "UU";
+    else if (/\bchumash\b/.test(lower)) recovered.place_code = "CHUMASH";
+    else if (/\bdexter lawn\b/.test(lower)) recovered.place_code = "DEXTER-LAWN";
+    else if (/\bkennedy library\b|\blibrary\b/.test(lower)) recovered.place_code = "LIBRARY";
+    else if (/\borfalea college of business\b|\bbusiness building\b/.test(lower)) recovered.place_code = "BUSINESS";
+    else if (/\brecreation center\b|\brec center\b/.test(lower)) recovered.place_code = "REC-CENTER";
+    else if (/\bmott athletics\b/.test(lower)) recovered.place_code = "MOTT";
+    else if (/\bspanos theatre\b/.test(lower)) recovered.place_code = "SPANOS";
+    else if (/\bonline\b|\bzoom\b/.test(lower)) recovered.place_code = "ONLINE";
+  }
+  if (!recovered.place_detail) {
+    const room = /\b(?:room|rm\.?)\s*([A-Za-z0-9-]+)\b/i.exec(announcement);
+    if (room) recovered.place_detail = `Room ${room[1]}`;
+  }
+  return recovered;
+}
+
+function recoverObviousFields(card: Card, announcement: string, today: string): Card {
+  const recovered = recoverObviousPlace({
+    ...card,
+    missing: [...card.missing],
+    rule_flags: [...card.rule_flags],
+  }, announcement);
+  if (!recovered.event_date) recovered.event_date = recoverObviousDate(announcement, today);
+  const times = recoverObviousTimes(announcement);
+  if (!recovered.start_time) recovered.start_time = times.start;
+  if (!recovered.end_time) recovered.end_time = times.end;
+
+  if (recovered.event_date) {
+    recovered.missing = recovered.missing.filter((item) => !/date/i.test(item));
+  }
+  if (recovered.start_time) {
+    recovered.missing = recovered.missing.filter((item) => !/start|time/i.test(item));
+  }
+  if (recovered.event_date && recovered.start_time && recovered.place_code) {
+    recovered.rule_flags = recovered.rule_flags.filter((flag) => flag.toUpperCase() !== "R2");
+  }
+  return recovered;
+}
+
 function getServiceKey(): string {
   const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
   if (secretKeys) {
@@ -518,7 +644,11 @@ Deno.serve(async (request: Request) => {
     }
 
     const today = getPacificDate();
-    const card = await callClaude(announcement, today, flyer);
+    const card = recoverObviousFields(
+      await callClaude(announcement, today, flyer),
+      announcement,
+      today,
+    );
     const decision = buildEvent(
       card,
       today,
