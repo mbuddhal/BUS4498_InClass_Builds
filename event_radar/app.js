@@ -13,6 +13,15 @@
   const resultLabel = document.getElementById("result-label");
   const resultMessage = document.getElementById("result-message");
   const resultReasons = document.getElementById("result-reasons");
+  const moderatorSignInForm = document.getElementById("moderator-sign-in-form");
+  const moderatorEmailInput = document.getElementById("moderator-email");
+  const moderatorPasswordInput = document.getElementById("moderator-password");
+  const moderatorAuthMessage = document.getElementById("moderator-auth-message");
+  const moderatorSignedOut = document.getElementById("moderator-signed-out");
+  const moderatorSignedIn = document.getElementById("moderator-signed-in");
+  const moderatorSignOutButton = document.getElementById("moderator-sign-out");
+  const moderatorStatus = document.getElementById("moderator-status");
+  const waitingBoard = document.getElementById("waiting-board");
 
   const publicColumns = [
     "id",
@@ -31,10 +40,25 @@
     "flyer_url",
   ].join(",");
 
+  const moderatorColumns = [
+    ...publicColumns.split(","),
+    "announcement",
+    "status_reason",
+    "note_for_moderator",
+  ].join(",");
+
   let supabaseClient = null;
 
   function setBoardStatus(message) {
     boardStatus.textContent = message;
+  }
+
+  function setModeratorMessage(message) {
+    moderatorAuthMessage.textContent = message;
+  }
+
+  function setModeratorStatus(message) {
+    moderatorStatus.textContent = message;
   }
 
   function makeElement(tagName, className, text) {
@@ -126,6 +150,39 @@
     events.forEach((event) => board.append(renderEvent(event)));
   }
 
+  function renderWaitingEvents(events) {
+    waitingBoard.replaceChildren();
+    if (!events || events.length === 0) {
+      waitingBoard.append(makeElement("li", "empty", "No posts are waiting for review."));
+      return;
+    }
+
+    events.forEach((event) => {
+      const item = renderEvent(event);
+      const review = makeElement("div", "review");
+      review.append(makeElement(
+        "p",
+        "why",
+        event.note_for_moderator || event.status_reason || "This post needs moderator review."
+      ));
+      review.append(makeElement(
+        "p",
+        "original",
+        event.announcement || "Original announcement unavailable."
+      ));
+
+      const actions = makeElement("p", "actions");
+      const approveButton = makeElement("button", "", "Approve");
+      const rejectButton = makeElement("button", "ghost", "Reject");
+      approveButton.addEventListener("click", () => reviewEvent(event.id, "published"));
+      rejectButton.addEventListener("click", () => reviewEvent(event.id, "rejected"));
+      actions.append(approveButton, rejectButton);
+      review.append(actions);
+      item.append(review);
+      waitingBoard.append(item);
+    });
+  }
+
   function clearReasons() {
     resultReasons.replaceChildren();
   }
@@ -167,6 +224,91 @@
 
     renderEvents(data || []);
     setBoardStatus(`${(data || []).length} published event${(data || []).length === 1 ? "" : "s"}`);
+  }
+
+  async function loadWaitingEvents() {
+    if (!supabaseClient) return;
+    setModeratorStatus("Loading posts…");
+    const { data, error } = await supabaseClient
+      .from("events")
+      .select(moderatorColumns)
+      .eq("status", "waiting")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      renderWaitingEvents([]);
+      setModeratorStatus("Waiting posts could not be loaded right now.");
+      return;
+    }
+
+    renderWaitingEvents(data || []);
+    const count = (data || []).length;
+    setModeratorStatus(`${count} post${count === 1 ? "" : "s"} waiting for review`);
+  }
+
+  async function reviewEvent(id, status) {
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if (!userData || !userData.user) {
+      setModeratorMessage("Please sign in again.");
+      return;
+    }
+
+    const statusReason = status === "published"
+      ? "Approved by moderator."
+      : "Rejected by moderator.";
+    const { error } = await supabaseClient
+      .from("events")
+      .update({
+        status,
+        status_reason: statusReason,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: userData.user.id,
+      })
+      .eq("id", id);
+
+    if (error) {
+      setModeratorStatus("That review could not be saved.");
+      return;
+    }
+
+    setModeratorStatus(status === "published" ? "Post approved." : "Post rejected.");
+    await loadWaitingEvents();
+    await loadEvents();
+  }
+
+  function updateModeratorUi(session) {
+    const signedIn = Boolean(session);
+    moderatorSignedOut.hidden = signedIn;
+    moderatorSignedIn.hidden = !signedIn;
+    if (signedIn) {
+      setModeratorMessage("");
+      loadWaitingEvents();
+    } else {
+      waitingBoard.replaceChildren();
+      setModeratorStatus("");
+    }
+  }
+
+  async function signInModerator(event) {
+    event.preventDefault();
+    setModeratorMessage("Signing in…");
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: moderatorEmailInput.value.trim(),
+      password: moderatorPasswordInput.value,
+    });
+
+    if (error) {
+      setModeratorMessage("Sign-in failed. Check your email and password.");
+      return;
+    }
+
+    moderatorPasswordInput.value = "";
+    setModeratorMessage("Signed in.");
+  }
+
+  async function signOutModerator() {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) setModeratorMessage("Could not sign out.");
   }
 
   async function submitAnnouncement(event) {
@@ -231,6 +373,10 @@
     supabaseClient = window.supabase.createClient(config.supabaseUrl, config.publishableKey);
     form.addEventListener("submit", submitAnnouncement);
     refreshButton.addEventListener("click", loadEvents);
+    moderatorSignInForm.addEventListener("submit", signInModerator);
+    moderatorSignOutButton.addEventListener("click", signOutModerator);
+    supabaseClient.auth.onAuthStateChange((_event, session) => updateModeratorUi(session));
+    supabaseClient.auth.getSession().then(({ data }) => updateModeratorUi(data.session));
     loadEvents();
   }
 
