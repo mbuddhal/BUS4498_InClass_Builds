@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A public event board for campus clubs.">
+  <title>Club Event Radar</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="kicker">BUS 4498 · Campus clubs</p>
+      <h1>Club Event Radar</h1>
+      <p class="lede">Share a club announcement and turn it into a clear, easy-to-find event card for campus.</p>
+      <ul class="badges" aria-label="Website features">
+        <li>Published events</li>
+        <li>Clear event details</li>
+        <li>Moderator review when needed</li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <section class="card post" aria-labelledby="post-heading">
+      <h2 id="post-heading">Post an event</h2>
+      <p class="muted">Paste the announcement as you received it. The event agent will organize the details.</p>
+      <form id="post-form">
+        <label for="announcement">
+          Announcement
+          <span class="hint">Use 1–2000 characters. Include the date, start time, and place when you know them.</span>
+        </label>
+        <textarea id="announcement" name="announcement" maxlength="2000" required placeholder="Example: Board Game Guild: Game Night! Thursday, October 29, 7 to 10 pm in the University Union, Room 220."></textarea>
+        <button type="submit" id="submit-button">Post announcement</button>
+      </form>
+      <div id="result" class="result" role="status" aria-live="polite" hidden>
+        <p class="result-label" id="result-label"></p>
+        <p id="result-message"></p>
+        <ul class="reasons" id="result-reasons"></ul>
+      </div>
+    </section>
+
+    <section class="board-section" aria-labelledby="events-heading">
+      <div class="board-head">
+        <div>
+          <p class="kicker">The board</p>
+          <h2 id="events-heading">Upcoming events</h2>
+        </div>
+        <button type="button" class="ghost" id="refresh-button">Refresh</button>
+      </div>
+      <p class="muted" id="board-status" role="status" aria-live="polite">Loading events…</p>
+      <ul class="board" id="event-board" aria-live="polite"></ul>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Club Event Radar · BUS 4498 practice project</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
