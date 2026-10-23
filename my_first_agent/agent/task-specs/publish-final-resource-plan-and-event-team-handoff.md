@@ -9,17 +9,17 @@
 
 ## 1. Task Description
 
-Publish the coordinator-approved final quantities, assumptions, roster version, and exception notes to authorized event staff so the plan can be executed before the event.
+Publish the coordinator-approved final quantities, assumptions, roster version, and exception notes to authorized event staff so the plan can be executed before the event. Publication is permitted only after final H1 approval of the exact T16 forecast version and before the configured approval deadline.
 
 ## 2. Inputs
 
 ### Input 1
 
 - **Input name:** Approved final resource plan
-- **Contents and format:** Approved final forecast version, quantities, assumptions, roster version, and exception notes.
+- **Contents and format:** Approved final forecast version matching T16 exactly, H1 approval identity and timestamp, quantities, assumptions, roster version, and exception notes.
 - **Source:** H1: Coordinator Reviews Forecast and Resource Plan.
 
-- **If a required input is missing or invalid:** Keep the plan unpublished and return it to H1 for correction or approval.
+- **If a required input is missing, mismatched, late, or invalid:** Keep the plan unpublished and return it to H1 for correction or explicit coordinator escalation.
 
 ## 3. Outputs
 
