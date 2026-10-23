@@ -31,11 +31,11 @@ The system debounces triggers: once a recalculation is queued, additional record
 
 CPVC defines the event through T1 and opens registration through T2. T3 sends the configured registration and attendance reminders. T4 collects registrations, cancellations, and reminder responses. T5 normalizes and reconciles the records. If issues exist, T6 runs standard data-quality checks and routes exceptions. T7 establishes baseline and uncertainty assumptions, using the historical 40 percent attendance baseline when no stronger evidence is available.
 
-T8 investigates unresolved attendance signals with a bounded AI agent. The agent chooses only approved evidence checks, stays within its check and time budget, and escalates unresolved cases to a coordinator. T9 produces the attendance estimate and likely range. T10 adds the safety buffer, and T11 calculates food, drink, and swag quantities. H1 is the coordinator review. If changes are needed, T12 records the override and revises the plan.
+T8 investigates unresolved attendance signals with a bounded AI agent. The agent chooses only approved evidence checks, stays within its check and time budget, and escalates unresolved cases to a coordinator. T9 produces the attendance estimate and likely range. T10 adds the safety buffer, and T11 calculates food, drink, and swag quantities. H1 is the interim coordinator review. If changes are needed, T12 records the override and revises the plan. Every H1-to-T12 revision cycle increments a revision counter and is allowed only before the configured final-approval deadline and within the maximum revision-round limit.
 
 While registration is open, T13 monitors new records and reminder responses, batches them, and checks the recalculation policy. It routes the workflow back to T5 only when a scheduled, material-change, or manual trigger is met.
 
-When registration closes, the workflow does not go directly to check-in. T14 closes and freezes the planning roster. T15 runs the configured pre-event confirmation window, including the final reminder and collection of late cancellations or reminder responses. T16 runs the final forecast at the pre-event cutoff, after which T17 publishes the operational handoff. T18 captures event check-in data, T19 compares the forecast with actual attendance, and T20 stores the results and updates the future baseline.
+When registration closes, the workflow does not go directly to check-in. T14 closes and freezes the planning roster. T15 runs the configured pre-event confirmation window, including the final reminder and collection of late cancellations or reminder responses. T16 runs the final forecast at the pre-event cutoff, then H1 performs a final approval of that exact forecast version. T17 publishes the operational handoff only after that approval. T18 captures event check-in data, T19 compares both the registration-only baseline and VibeCast forecast with actual attendance using the same error measure, and T20 stores the results and updates the future baseline.
 
 ### 1.6 Workflow Diagram
 
@@ -76,7 +76,11 @@ flowchart TD
     D6 -->|No| T14["T14: Close registration and freeze planning roster"]
     T14 --> T15["T15: Run pre-event confirmation window and final reminder"]
     T15 --> T16["T16: Run final forecast at configured cutoff"]
-    T16 --> T17["T17: Publish final resource plan and event-team handoff"]
+    T16 --> H1F["H1: Final approval before handoff"]
+    H1F -->|Approve exact version before deadline| T17["T17: Publish final resource plan and event-team handoff"]
+    H1F -->|Override, with rounds and deadline remaining| T12F["T12: Record coordinator override and revise plan"]
+    T12F --> H1F
+    H1F -->|Deadline or revision limit reached| C4([C4: Final plan held for coordinator escalation])
     T17 --> T18["T18: Capture event check-in data"]
     T18 --> T19["T19: Compare forecast with actual attendance"]
     T19 --> T20["T20: Store results and update future baseline"]
@@ -89,7 +93,7 @@ flowchart TD
 
 **Purpose:** Establish the event details needed for forecasting.
 
-**Inputs:** Event name, event date and start time, venue or delivery mode, capacity, resource categories, registration close time, pre-event forecast cutoff, reminder schedule, and material-change thresholds.
+**Inputs:** Event name, event date and start time, venue or delivery mode, capacity, resource categories, registration close time, pre-event forecast cutoff, reminder schedule, material-change thresholds, final-approval deadline, and maximum revision rounds.
 
 **Actions:** Validate required fields and create the event planning record.
 
@@ -201,7 +205,7 @@ flowchart TD
 
 **Inputs:** Coordinator decision, reason, revised values, and forecast version.
 
-**Actions:** Record the override, identify affected quantities, recalculate dependent outputs, and return the revised plan to H1.
+**Actions:** Record the override, increment the revision round, identify affected quantities, recalculate dependent outputs, and return the revised plan to the applicable H1 review only while the final-approval deadline and maximum revision-round limit have not been reached. If either limit is reached, keep the plan unpublished and escalate to the coordinator.
 
 **Outputs:** Auditable revised resource plan.
 
@@ -243,13 +247,13 @@ flowchart TD
 
 **Actions:** Recalculate once at the configured cutoff, apply the safety buffer, calculate resource quantities, and record the final forecast version.
 
-**Outputs:** Final approved forecast and resource quantities.
+**Outputs:** Final forecast and resource quantities prepared for H1 final approval.
 
 ### T17: Publish Final Resource Plan and Event-Team Handoff
 
 **Purpose:** Make the final plan operational before the event begins.
 
-**Inputs:** Final forecast and coordinator approval.
+**Inputs:** Final forecast version and exact H1 final approval recorded before the configured deadline.
 
 **Actions:** Publish quantities, assumptions, roster version, and exception notes to authorized event staff.
 
@@ -271,7 +275,7 @@ flowchart TD
 
 **Inputs:** Final forecast version and actual attendance record.
 
-**Actions:** Compare point estimate, likely range, buffered quantity, and actual attendance; calculate variance and document material causes.
+**Actions:** Calculate APE for the VibeCast point forecast and for the registration-only baseline (`0.40 x registrations`) against actual attendance, compare the likely range and buffered quantity, and document material causes and any zero-attendance limitation.
 
 **Outputs:** Forecast-performance record.
 
@@ -293,7 +297,7 @@ The coordinator decides whether the evidence is sufficient, approves a documente
 
 ### H1: Coordinator Reviews Forecast and Resource Plan
 
-The coordinator approves the plan or records an override through T12. Approval is required before T17 publishes the final operational handoff.
+The coordinator reviews interim plans and the final T16 package. For the final package, approval must identify the exact forecast version, be recorded before the configured final-approval deadline, and occur within the maximum revision-round limit. The coordinator approves the plan or records an override through T12; no silence or timeout is treated as approval.
 
 ### C1: Forecast and Learning Record Stored
 
@@ -306,3 +310,7 @@ The workflow pauses when the bounded investigation cannot support a forecast and
 ### C3: Workflow Stopped
 
 The workflow stops when the event is canceled. The cancellation and any completed planning records remain auditable.
+
+### C4: Final Plan Held for Coordinator Escalation
+
+The final plan remains unpublished when the approval deadline or maximum revision-round limit is reached. A coordinator must decide how to proceed; the system does not publish automatically.
