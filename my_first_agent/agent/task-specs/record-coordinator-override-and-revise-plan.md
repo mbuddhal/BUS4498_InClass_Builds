@@ -9,14 +9,14 @@
 
 ## 1. Task Description
 
-The coordinator records an event-specific override to the forecast or resource plan, explains the reason, and approves the dependent recalculation. Human judgment controls the override; the system only records and recalculates the resulting plan.
+The coordinator records an event-specific override to the forecast or resource plan, explains the reason, and approves the dependent recalculation. Human judgment controls the override; the system only records and recalculates the resulting plan. Each revision increments the revision round; another review is allowed only before the final-approval deadline and below the maximum revision-round limit.
 
 ## 2. Inputs
 
 ### Input 1
 
 - **Input name:** Coordinator override decision
-- **Contents and format:** Human decision containing the forecast version, changed values, reason, affected resource categories, and approval date.
+- **Contents and format:** Human decision containing the forecast version, changed values, reason, affected resource categories, approval date, review context, current revision round, final-approval deadline, and maximum revision rounds.
 - **Source:** H1: Coordinator Reviews Forecast and Resource Plan.
 
 - **If a required input is missing or invalid:** Return the decision to H1 for clarification and leave the prior plan active.
@@ -26,11 +26,17 @@ The coordinator records an event-specific override to the forecast or resource p
 ### Output 1
 
 - **Output name:** Auditable revised resource plan
-- **Contents and format:** Revised quantities linked to the original forecast version, override reason, recalculation, and coordinator identity.
-- **Next task or recipient:** H1: Coordinator Reviews Forecast and Resource Plan.
-- **Complete when:** The override and all dependent quantities are recorded and the revised plan is ready for H1 review.
+- **Contents and format:** Revised quantities linked to the original forecast version, override reason, recalculation, coordinator identity, and incremented revision round.
+- **Next task or recipient:** H1: Coordinator Reviews Forecast and Resource Plan, using the interim or final review context.
+- **Complete when:** The override and all dependent quantities are recorded and the revised plan is ready for H1 review, or the deadline/round limit is reached and the plan is escalated without publication.
 
-## 4. Planned Tools
+## 4. Revision Guardrails
+
+- Increment the revision round exactly once for each completed T12 revision.
+- Permit another H1 review only when the final-approval deadline has not passed and the revision round is below the configured maximum.
+- If either condition fails, preserve the prior version, keep the plan unpublished, and hand the case to the coordinator.
+
+## 5. Planned Tools
 
 ### Tool 1
 
