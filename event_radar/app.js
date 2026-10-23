@@ -6,6 +6,7 @@
   const boardStatus = document.getElementById("board-status");
   const form = document.getElementById("post-form");
   const announcementInput = document.getElementById("announcement");
+  const flyerInput = document.getElementById("flyer");
   const submitButton = document.getElementById("submit-button");
   const refreshButton = document.getElementById("refresh-button");
   const result = document.getElementById("result");
@@ -27,6 +28,7 @@
     "cost",
     "free_food",
     "summary",
+    "flyer_url",
   ].join(",");
 
   let supabaseClient = null;
@@ -103,6 +105,15 @@
     if (tags.childElementCount > 0) body.append(tags);
 
     item.append(date, body);
+    const flyerUrl = typeof event.flyer_url === "string" ? event.flyer_url : "";
+    const allowedPrefix = `${config.supabaseUrl}/storage/v1/object/public/flyers/`;
+    if (flyerUrl.startsWith(allowedPrefix)) {
+      const flyer = makeElement("img", "flyer");
+      flyer.src = flyerUrl;
+      flyer.alt = `${event.title || "Event"} flyer`;
+      flyer.loading = "lazy";
+      item.append(flyer);
+    }
     return item;
   }
 
@@ -167,13 +178,28 @@
       return;
     }
 
+    const flyer = flyerInput.files && flyerInput.files[0];
+    if (flyer) {
+      if (flyer.size > 5 * 1024 * 1024) {
+        showResult("error", "The flyer must be 5 MB or smaller.", []);
+        return;
+      }
+      if (!['image/jpeg', 'image/png'].includes(flyer.type)) {
+        showResult("error", "The flyer must be a JPG or PNG image.", []);
+        return;
+      }
+    }
+
     submitButton.disabled = true;
     submitButton.textContent = "Posting…";
     try {
+      const formData = new FormData();
+      formData.append("announcement", announcement);
+      if (flyer) formData.append("flyer", flyer);
       const response = await fetch(`${config.supabaseUrl}/functions/v1/submit-event`, {
         method: "POST",
         headers: { apikey: config.publishableKey },
-        body: new URLSearchParams({ announcement }),
+        body: formData,
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || payload.ok === false) {
@@ -183,6 +209,7 @@
       showResult(payload.status, payload.message, payload.reasons);
       if (payload.status === "published") {
         announcementInput.value = "";
+        flyerInput.value = "";
         await loadEvents();
       }
     } catch (error) {
