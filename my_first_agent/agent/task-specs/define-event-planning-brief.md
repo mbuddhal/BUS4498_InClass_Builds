@@ -16,7 +16,7 @@ The coordinator defines and approves the event requirements that control registr
 ### Input 1
 
 - **Input name:** Event planning requirements
-- **Contents and format:** Human-provided planning record containing event name, date, start time, venue or delivery mode, capacity, resource categories, registration close, forecast cutoff, reminder schedule, and thresholds.
+- **Contents and format:** Human-provided planning record containing event name, date, start time, venue or delivery mode, capacity, resource categories, registration close, forecast cutoff, reminder schedule, material-change thresholds, final-approval deadline, and maximum revision rounds.
 - **Source:** CPVC event planning coordinator.
 
 - **If a required input is missing or invalid:** Return the brief to the coordinator for clarification; do not open registration. Handoff recipient: CPVC event planning coordinator.
@@ -26,7 +26,7 @@ The coordinator defines and approves the event requirements that control registr
 ### Output 1
 
 - **Output name:** Approved event brief
-- **Contents and format:** Completed structured event record with all required dates, limits, categories, and thresholds.
+- **Contents and format:** Completed structured event record with all required dates, limits, categories, thresholds, final-approval deadline, and maximum revision rounds.
 - **Next task or recipient:** T2: Open Registration and Set Event Window.
 - **Complete when:** The coordinator has reviewed and approved every required field.
 
