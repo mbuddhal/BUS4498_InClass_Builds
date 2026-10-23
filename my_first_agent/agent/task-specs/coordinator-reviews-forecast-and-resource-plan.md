@@ -9,14 +9,14 @@
 
 ## 1. Task Description
 
-The coordinator reviews the attendance forecast, safety buffer, resource quantities, assumptions, and exception notes. The coordinator approves publication or records an override through T12; approval is required before the final handoff.
+The coordinator reviews the attendance forecast, safety buffer, resource quantities, assumptions, exception notes, and review context. H1 is used for both interim planning reviews and the final T16 approval gate. For the final gate, approval must name the exact forecast version and be recorded before the configured deadline and within the maximum revision-round limit. The coordinator approves publication or records an override through T12; approval is required before the final handoff.
 
 ## 2. Inputs
 
 ### Input 1
 
 - **Input name:** Forecast and resource plan
-- **Contents and format:** Versioned estimate, likely range, buffered attendance, food/drink/swag quantities, assumptions, evidence limitations, and unresolved issues.
+- **Contents and format:** Versioned estimate, likely range, buffered attendance, food/drink/swag quantities, assumptions, evidence limitations, unresolved issues, review context, revision round, configured final-approval deadline, and maximum revision rounds.
 - **Source:** T11: Calculate Food, Drink, and Swag Quantities or T16: Run Final Forecast at Configured Cutoff.
 
 - **If a required input is missing or invalid:** Return the plan to the sending task for correction and do not publish it.
@@ -26,11 +26,17 @@ The coordinator reviews the attendance forecast, safety buffer, resource quantit
 ### Output 1
 
 - **Output name:** Coordinator approval or override
-- **Contents and format:** Approval with version and timestamp, or a reasoned override containing revised values and affected outputs.
-- **Next task or recipient:** T17: Publish Final Resource Plan and Event-Team Handoff, or T12: Record Coordinator Override and Revise Plan.
-- **Complete when:** The coordinator’s decision and receiving route are recorded against the reviewed plan version.
+- **Contents and format:** Approval naming the exact forecast version with coordinator identity and timestamp, or a reasoned override containing revised values and affected outputs.
+- **Next task or recipient:** T17: Publish Final Resource Plan and Event-Team Handoff after final approval, or T12: Record Coordinator Override and Revise Plan while the deadline and revision limit remain.
+- **Complete when:** The coordinator’s decision and receiving route are recorded against the reviewed plan version. Silence, timeout, a missed deadline, or an exhausted revision limit never counts as approval.
 
-## 4. Planned Tools
+## 4. Decision Guardrails
+
+- Every final approval must reference the exact T16 forecast version being published.
+- T12 may create another revision only when the current time is before the configured final-approval deadline and the revision count is below the maximum.
+- If either limit is reached, keep the plan unpublished and route it to the CPVC event planning coordinator for an explicit decision.
+
+## 5. Planned Tools
 
 ### Tool 1
 
