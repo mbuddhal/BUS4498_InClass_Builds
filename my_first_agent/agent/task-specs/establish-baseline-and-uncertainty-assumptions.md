@@ -9,7 +9,7 @@
 
 ## 1. Task Description
 
-Select the strongest approved attendance baseline and calculate uncertainty inputs from reconciled evidence and prior event results. Fixed baseline and uncertainty rules are applied; unsupported assumptions are recorded as limitations.
+Select the strongest approved attendance baseline and calculate uncertainty inputs from reconciled evidence and prior event results. The registration-only baseline is `0.40 x registrations`, and its performance must be measured with the same APE definition used for the VibeCast target. Fixed baseline and uncertainty rules are applied; unsupported assumptions are recorded as limitations.
 
 ## 2. Inputs
 
@@ -22,7 +22,7 @@ Select the strongest approved attendance baseline and calculate uncertainty inpu
 ### Input 2
 
 - **Input name:** Historical attendance evidence
-- **Contents and format:** Prior event results and the approved historical 40 percent baseline in a structured evidence record.
+- **Contents and format:** Prior event results, registrant counts, actual attendance, and the approved historical 40 percent registration-only baseline in a structured evidence record, with the baseline APE calculated using the same metric as the target.
 - **Source:** T20: Store Results and Update Future Baseline and approved CPVC history.
 
 - **If a required input is missing or invalid:** Record the limitation and route the case to H0: Coordinator Reviews Unresolved Evidence; do not silently substitute a baseline.
@@ -32,7 +32,7 @@ Select the strongest approved attendance baseline and calculate uncertainty inpu
 ### Output 1
 
 - **Output name:** Versioned baseline and uncertainty assumptions
-- **Contents and format:** Selected baseline, uncertainty values, source versions, selection rationale, and limitations.
+- **Contents and format:** Selected baseline, baseline forecast value, baseline APE when actual attendance is available, uncertainty values, source versions, selection rationale, and limitations.
 - **Next task or recipient:** T8: Investigate Unresolved Attendance Signals and T9: Produce Attendance Estimate and Likely Range.
 - **Complete when:** Each assumption has an approved source or an explicit limitation and version.
 
