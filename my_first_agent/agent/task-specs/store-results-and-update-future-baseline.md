@@ -16,7 +16,7 @@ Store the complete event learning record and update the future baseline only und
 ### Input 1
 
 - **Input name:** Event learning package
-- **Contents and format:** Event brief, forecast versions, overrides, reminder logs, exceptions, actual attendance, and T19 variance analysis.
+- **Contents and format:** Event brief, forecast versions, overrides, reminder logs, exceptions, actual attendance, T19 variance analysis, VibeCast APE, registration-only baseline APE, and any zero-attendance limitation.
 - **Source:** T1, T3, T6, T12, T18, and T19.
 
 - **If a required input is missing or invalid:** Record the learning package as incomplete and hand it to the CPVC forecasting coordinator; do not update the baseline.
@@ -26,7 +26,7 @@ Store the complete event learning record and update the future baseline only und
 ### Output 1
 
 - **Output name:** Archived event record and updated future baseline input
-- **Contents and format:** Immutable event record, variance analysis, approved learning-rule result, and versioned baseline input.
+- **Contents and format:** Immutable event record, variance analysis using the common APE metric, approved learning-rule result, and versioned baseline input.
 - **Next task or recipient:** T7: Establish Baseline and Uncertainty Assumptions for a future event and C1: Forecast and Learning Record Stored.
 - **Complete when:** The event record is archived and any baseline update is linked to the approved learning rule.
 
