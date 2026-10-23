@@ -16,6 +16,14 @@ VibeCast
 ### System Goal
 For CPVC event organizers, accurately forecast AI Hackathon attendance, measured by improving from the current registration based approach, where roughly 40% of registrants attended the last event, to forecasts within 10% of actual attendance, without exceeding the club’s budget, running short on essential resources, compromising privacy, or sending excessive communications.
 
+### Evaluation Metric
+
+For every event with actual attendance greater than zero, measure point-forecast performance with absolute percentage error (APE):
+
+`APE = |forecast - actual attendance| / actual attendance x 100`
+
+The success target is APE less than or equal to 10%. The registration-only baseline is a forecast of `0.40 x registrations`; evaluate that baseline on the same historical event and with the same APE measure before comparing it with VibeCast. If actual attendance is zero, report absolute error separately because APE is undefined.
+
 ### Who Is Better Off When This Works?
 
 CPVC club coordinators, attendees, and the club budget are better off: coordinators plan with greater confidence, attendees are less likely to face shortages, and the club wastes less money on unused resources.
