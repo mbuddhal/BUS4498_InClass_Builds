@@ -90,6 +90,14 @@ function reply(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 }
 
+type ChannelInput = {
+  announcement: string;
+  source: string;
+  source_id: string;
+  source_name: string;
+  thread: string[];
+};
+
 // The secret key for this project, which Supabase provides inside every Edge Function.
 function serverKey(): string {
   const keys = Deno.env.get("SUPABASE_SECRET_KEYS");
@@ -386,15 +394,21 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply(405, { ok: false, message: "Send a POST request." });
 
   try {
-    const ai = aiProvider();
-    if (!ai) throw new PostError("No AI key yet. Add ANTHROPIC_API_KEY or OPENAI_API_KEY in Edge Functions → Secrets.", 503);
-
     // Read the post: a form (from the website) or JSON.
     let announcement = "";
+    let source = "";
+    let sourceId = "";
+    let sourceName = "";
+    let thread: string[] = [];
     let photo: Photo | null = null;
     const type = req.headers.get("content-type") ?? "";
     if (type.includes("application/json")) {
-      announcement = String((await req.json()).announcement ?? "");
+      const body = await req.json() as Partial<ChannelInput>;
+      announcement = String(body.announcement ?? "");
+      source = String(body.source ?? "").slice(0, 40);
+      sourceId = String(body.source_id ?? "").slice(0, 200);
+      sourceName = String(body.source_name ?? "").slice(0, 200);
+      thread = Array.isArray(body.thread) ? body.thread.map((item) => String(item).slice(0, 500)).slice(-4) : [];
     } else {
       const form = await req.formData();
       announcement = String(form.get("announcement") ?? "");
@@ -407,11 +421,39 @@ Deno.serve(async (req) => {
         photo = { bytes: new Uint8Array(await file.arrayBuffer()), type: file.type };
       }
     }
+
+    const db = createClient(Deno.env.get("SUPABASE_URL")!, serverKey(), { auth: { persistSession: false } });
+
+    // A callback and the scheduled job can deliver the same message. Check before
+    // the spending guard or AI call so a duplicate never receives a second decision.
+    if (source && sourceId) {
+      const { data: alreadyRead, error: readError } = await db.from("events")
+        .select("id, title, club, event_date, start_time, end_time, place_name, place_detail, cost, free_food, status, created_at, flyer_url, source, source_id, source_name")
+        .eq("source", source)
+        .eq("source_id", sourceId)
+        .maybeSingle();
+      if (readError) {
+        console.error("Message duplicate check failed", readError);
+        throw new PostError("The database couldn't check whether this chat message was already read. Check the function logs.", 500);
+      }
+      if (alreadyRead) {
+        return reply(200, {
+          ok: true,
+          status: "duplicate",
+          already_read: true,
+          message: MESSAGES.duplicate,
+          reasons: ["This chat message was already read."],
+          event: alreadyRead,
+        });
+      }
+    }
+
+    const ai = aiProvider();
+    if (!ai) throw new PostError("No AI key yet. Add ANTHROPIC_API_KEY or OPENAI_API_KEY in Edge Functions → Secrets.", 503);
+
     announcement = announcement.trim();
     if (!announcement) throw new PostError("Paste the announcement text first.");
     if (announcement.length > MAX_TEXT) throw new PostError(`Keep the announcement under ${MAX_TEXT} characters.`);
-
-    const db = createClient(Deno.env.get("SUPABASE_URL")!, serverKey(), { auth: { persistSession: false } });
 
     // Spending guard.
     const since = new Date(Date.now() - 86400000).toISOString();
@@ -444,6 +486,9 @@ Deno.serve(async (req) => {
       rule_flags: card.rule_flags,
       note_for_moderator: card.note_for_moderator,
       flyer_url: "",
+      source,
+      source_id: sourceId,
+      source_name: sourceName,
       // One live post per date + start time + place. The database enforces it with a unique index.
       dedupe_key: status !== "rejected" && eventDate && startTime && placeCode ? `${eventDate}|${startTime}|${placeCode}` : null,
       ai_model: ai === "claude" ? CLAUDE_MODEL : OPENAI_MODEL,
@@ -452,6 +497,23 @@ Deno.serve(async (req) => {
     const { data: saved, error } = await db.from("events").insert(row).select().single();
     if (error) {
       if (error.code === "23505") {
+        if (source && sourceId) {
+          const { data: existingMessage } = await db.from("events")
+            .select("id, title, club, event_date, start_time, end_time, place_name, place_detail, cost, free_food, status, created_at, flyer_url, source, source_id, source_name")
+            .eq("source", source)
+            .eq("source_id", sourceId)
+            .maybeSingle();
+          if (existingMessage) {
+            return reply(200, {
+              ok: true,
+              status: "duplicate",
+              already_read: true,
+              message: MESSAGES.duplicate,
+              reasons: ["This chat message was already read."],
+              event: existingMessage,
+            });
+          }
+        }
         const { data: existing } = await db.from("events")
           .select("title, club, event_date, start_time, end_time, place_name, place_detail, cost, free_food, status, created_at, flyer_url")
           .eq("dedupe_key", row.dedupe_key).in("status", ["published", "waiting"]).maybeSingle();
